@@ -2,6 +2,8 @@ import os
 from dotenv import load_dotenv
 import requests
 import json
+from datetime import datetime, timezone
+from pathlib import Path
 
 load_dotenv()
 CHAVE_API = os.getenv("API_KEY")
@@ -107,9 +109,26 @@ def extract_video_data(video_ids):
     except requests.exceptions.RequestException as e:
         raise e
 
+def save_to_json(extracted_data, output_dir="data"):
+    if not extracted_data:
+        raise ValueError("Nenhum dado extraído para salvar.")
+
+    data_dir = Path(output_dir)
+    data_dir.mkdir(parents=True, exist_ok=True)
+    today_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    file_path = data_dir / f"youtube_data_{today_utc}.json"
+    temp_path = file_path.with_suffix(".tmp")
+
+    with open(temp_path, "w", encoding="utf-8") as json_outfile:
+        json.dump(extracted_data, json_outfile, indent=4, ensure_ascii=False)
+
+    temp_path.replace(file_path)
+    return file_path
+
 
 if __name__ == "__main__":
     playlistId = get_playlist_id()
     video_ids = get_video_id(playlistId)
-    print(extract_video_data(video_ids))
+    video_data = extract_video_data(video_ids)
+    save_to_json(video_data)
         
